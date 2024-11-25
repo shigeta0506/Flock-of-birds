@@ -15,7 +15,7 @@ public class Boid : MonoBehaviour
 
     private float maxDistanceFromGroup = 20f;
 
-    public List<Boid> allBoids; //群れ全体のBoidリスト
+    public List<Boid> allBoids;
 
     private Vector3 velocity;
     private Vector3 collisionAvoidanceForce;
@@ -24,6 +24,9 @@ public class Boid : MonoBehaviour
     public float detectionRadius = 5f;
     public float avoidanceRange = 10f;
     private bool isAvoidingTree = false;
+
+    private int frameCounter = 0;
+    private const int calculationFrequency = 5;
 
     void Start()
     {
@@ -34,23 +37,37 @@ public class Boid : MonoBehaviour
 
     void Update()
     {
-        //群れ行動（整列、結束、分離）の力を計算
-        Vector3 alignment = Align() * 0.5f;
-        Vector3 cohesion = Cohere() * 1.2f;
-        Vector3 separation = Separate() * 1.0f;
+        frameCounter++;
+        if (frameCounter % calculationFrequency == 0)
+        {
+            CalculateForces();
+            frameCounter = 0;
+        }
 
-        // 障害物回避の力を優先的に適用
+        MoveBoid();
+    }
+
+    void CalculateForces()
+    {
+        List<Boid> nearbyBoids = GetNearbyBoids();
+
+        Vector3 alignment = Align(nearbyBoids) * 0.5f;
+        Vector3 cohesion = Cohere(nearbyBoids) * 1.2f;
+        Vector3 separation = Separate(nearbyBoids) * 1.0f;
+
         Vector3 avoidance = AvoidTaggedObjects("Bird") * 1.5f;
         Vector3 treeAvoidance = DetectAndAvoidTreesInPath() * 2.5f;
 
-        //各力を合成してBoidの動きを決定
         Vector3 force = alignment + cohesion + separation + avoidance + collisionAvoidanceForce + treeAvoidance;
         velocity += force * Time.deltaTime;
 
         AdjustSpeedAndHeightBasedOnAltitude();
 
         velocity = velocity.normalized * currentSpeed;
+    }
 
+    void MoveBoid()
+    {
         Vector3 newPosition = transform.position + velocity * Time.deltaTime;
         transform.position = newPosition;
 
@@ -60,30 +77,27 @@ public class Boid : MonoBehaviour
 
     void AdjustSpeedAndHeightBasedOnAltitude()
     {
-        float minAltitude = 15f; //最低高度
-        float maxAltitude = 25f; //最高高度
-        float altitudeAdjustmentStrength = 0.1f; //高度調整の強さ
+        float minAltitude = 15f;
+        float maxAltitude = 25f;
+        float altitudeAdjustmentStrength = 0.1f;
 
         if (transform.position.y < minAltitude)
         {
-            //高さが最低高度未満の場合、上昇する力を追加
             float altitudeDifference = minAltitude - transform.position.y;
             velocity += Vector3.up * altitudeDifference * altitudeAdjustmentStrength;
         }
         else if (transform.position.y > maxAltitude)
         {
-            //高さが最高高度を超えた場合、下降する力を追加
             float altitudeDifference = transform.position.y - maxAltitude;
             velocity += Vector3.down * altitudeDifference * altitudeAdjustmentStrength;
         }
         else
         {
-            //高さが範囲内の場合、上昇・下降の力をリセット
             velocity.y = Mathf.Lerp(velocity.y, 0, Time.deltaTime * 2f);
         }
+
+        currentSpeed = Mathf.Max(currentSpeed, 1f);
     }
-
-
 
     Vector3 DetectAndAvoidTreesInPath()
     {
@@ -138,54 +152,47 @@ public class Boid : MonoBehaviour
         return avoidanceForce;
     }
 
-    Vector3 Align()
+    List<Boid> GetNearbyBoids()
     {
-        Vector3 alignmentForce = Vector3.zero;
-        int count = 0;
-
+        List<Boid> nearbyBoids = new List<Boid>();
         foreach (Boid otherBoid in allBoids)
         {
-            if (otherBoid != this)
+            if (otherBoid != this && Vector3.Distance(transform.position, otherBoid.transform.position) < neighborRadius)
             {
-                float distance = Vector3.Distance(transform.position, otherBoid.transform.position);
-                if (distance < neighborRadius)
-                {
-                    alignmentForce += otherBoid.velocity;
-                    count++;
-                }
+                nearbyBoids.Add(otherBoid);
             }
         }
+        return nearbyBoids;
+    }
 
-        if (count > 0)
+    Vector3 Align(List<Boid> nearbyBoids)
+    {
+        Vector3 alignmentForce = Vector3.zero;
+        foreach (Boid otherBoid in nearbyBoids)
         {
-            alignmentForce /= count;
+            alignmentForce += otherBoid.velocity;
+        }
+
+        if (nearbyBoids.Count > 0)
+        {
+            alignmentForce /= nearbyBoids.Count;
             alignmentForce = (alignmentForce - velocity).normalized * currentSpeed;
         }
 
         return alignmentForce;
     }
 
-    Vector3 Cohere()
+    Vector3 Cohere(List<Boid> nearbyBoids)
     {
         Vector3 cohesionForce = Vector3.zero;
-        int count = 0;
-
-        foreach (Boid otherBoid in allBoids)
+        foreach (Boid otherBoid in nearbyBoids)
         {
-            if (otherBoid != this)
-            {
-                float distance = Vector3.Distance(transform.position, otherBoid.transform.position);
-                if (distance < neighborRadius)
-                {
-                    cohesionForce += otherBoid.transform.position;
-                    count++;
-                }
-            }
+            cohesionForce += otherBoid.transform.position;
         }
 
-        if (count > 0)
+        if (nearbyBoids.Count > 0)
         {
-            cohesionForce /= count;
+            cohesionForce /= nearbyBoids.Count;
             cohesionForce -= transform.position;
             cohesionForce = cohesionForce.normalized * currentSpeed;
         }
@@ -193,25 +200,19 @@ public class Boid : MonoBehaviour
         return cohesionForce;
     }
 
-    Vector3 Separate()
+    Vector3 Separate(List<Boid> nearbyBoids)
     {
         Vector3 separationForce = Vector3.zero;
-        int count = 0;
-
-        foreach (Boid otherBoid in allBoids)
+        foreach (Boid otherBoid in nearbyBoids)
         {
-            if (otherBoid != this)
+            float distance = Vector3.Distance(transform.position, otherBoid.transform.position);
+            if (distance < separationDistance)
             {
-                float distance = Vector3.Distance(transform.position, otherBoid.transform.position);
-                if (distance < separationDistance)
-                {
-                    separationForce += (transform.position - otherBoid.transform.position).normalized / distance;
-                    count++;
-                }
+                separationForce += (transform.position - otherBoid.transform.position).normalized / distance;
             }
         }
 
-        if (count > 0)
+        if (nearbyBoids.Count > 0)
         {
             separationForce = separationForce.normalized * currentSpeed * separationStrength;
         }
