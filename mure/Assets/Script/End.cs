@@ -1,19 +1,13 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class End : MonoBehaviour
 {
-    // Start is called before the first frame update
-    void Update()
+    public void ExitGame()
     {
-        if (Input.GetKeyDown(KeyCode.Escape))
-        {
+        Application.Quit();
+
 #if UNITY_EDITOR
-            UnityEditor.EditorApplication.isPlaying = false;
-#else
-            Application.Quit();
+        UnityEditor.EditorApplication.isPlaying = false;
 #endif
-        }
     }
 }

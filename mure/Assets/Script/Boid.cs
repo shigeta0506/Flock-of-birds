@@ -4,35 +4,30 @@ using UnityEngine;
 public class Boid : MonoBehaviour
 {
     private float speed = 5f;
-    private float boostedSpeed = 8f;
-    private float reducedSpeed = 2f;
-    private float treeAvoidanceSpeed = 3f;
     private float rotationSpeed = 2f;
-    private float neighborRadius = 10f;
-    private float separationDistance = 5f;
-    private float separationStrength = 0.5f;
-    private float bankingFactor = 5f;
+    private float neighborRadius = 15f;
+    private float separationDistance = 6f;
+    private float separationStrength = 3.0f;
+    private float maxSpeed = 6f;
+    private float minSpeed = 2f;
 
-    private float maxDistanceFromGroup = 20f;
+    public float treeAvoidanceRange = 10f;
+    private float treeAvoidanceStrength = 10f;
 
     public List<Boid> allBoids;
 
     private Vector3 velocity;
-    private Vector3 collisionAvoidanceForce;
-    private float currentSpeed;
-
-    public float detectionRadius = 5f;
-    public float avoidanceRange = 10f;
-    private bool isAvoidingTree = false;
 
     private int frameCounter = 0;
     private const int calculationFrequency = 5;
 
+    private float minAltitude = 15f;
+    private float maxAltitude = 25f;
+    private float altitudeAdjustmentStrength = 2f;
+
     void Start()
     {
-        currentSpeed = speed;
-        velocity = transform.forward * currentSpeed;
-        collisionAvoidanceForce = Vector3.zero;
+        velocity = transform.forward * speed;
     }
 
     void Update()
@@ -52,18 +47,17 @@ public class Boid : MonoBehaviour
         List<Boid> nearbyBoids = GetNearbyBoids();
 
         Vector3 alignment = Align(nearbyBoids) * 0.5f;
-        Vector3 cohesion = Cohere(nearbyBoids) * 1.2f;
-        Vector3 separation = Separate(nearbyBoids) * 1.0f;
+        Vector3 cohesion = Cohere(nearbyBoids) * 1.0f;
+        Vector3 separation = Separate(nearbyBoids) * separationStrength;
 
-        Vector3 avoidance = AvoidTaggedObjects("Bird") * 1.5f;
         Vector3 treeAvoidance = DetectAndAvoidTreesInPath() * 2.5f;
 
-        Vector3 force = alignment + cohesion + separation + avoidance + collisionAvoidanceForce + treeAvoidance;
+        Vector3 altitudeAdjustment = MaintainAltitude();
+
+        Vector3 force = alignment + cohesion + separation + treeAvoidance + altitudeAdjustment;
         velocity += force * Time.deltaTime;
 
-        AdjustSpeedAndHeightBasedOnAltitude();
-
-        velocity = velocity.normalized * currentSpeed;
+        velocity = LimitSpeed(velocity);
     }
 
     void MoveBoid()
@@ -72,84 +66,29 @@ public class Boid : MonoBehaviour
         transform.position = newPosition;
 
         UpdateRotation();
-        collisionAvoidanceForce = Vector3.zero;
     }
 
-    void AdjustSpeedAndHeightBasedOnAltitude()
+    Vector3 LimitSpeed(Vector3 vel)
     {
-        float minAltitude = 15f;
-        float maxAltitude = 25f;
-        float altitudeAdjustmentStrength = 0.1f;
+        float speed = vel.magnitude;
+        speed = Mathf.Clamp(speed, minSpeed, maxSpeed);
+        return vel.normalized * speed;
+    }
+
+    Vector3 MaintainAltitude()
+    {
+        Vector3 altitudeForce = Vector3.zero;
 
         if (transform.position.y < minAltitude)
         {
-            float altitudeDifference = minAltitude - transform.position.y;
-            velocity += Vector3.up * altitudeDifference * altitudeAdjustmentStrength;
+            altitudeForce += Vector3.up * (minAltitude - transform.position.y) * altitudeAdjustmentStrength;
         }
         else if (transform.position.y > maxAltitude)
         {
-            float altitudeDifference = transform.position.y - maxAltitude;
-            velocity += Vector3.down * altitudeDifference * altitudeAdjustmentStrength;
-        }
-        else
-        {
-            velocity.y = Mathf.Lerp(velocity.y, 0, Time.deltaTime * 2f);
+            altitudeForce += Vector3.down * (transform.position.y - maxAltitude) * altitudeAdjustmentStrength;
         }
 
-        currentSpeed = Mathf.Max(currentSpeed, 1f);
-    }
-
-    Vector3 DetectAndAvoidTreesInPath()
-    {
-        Vector3 avoidDirection = Vector3.zero;
-        bool treeDetected = false;
-        float avoidanceStrength = 10.0f;
-
-        Collider[] hitColliders = Physics.OverlapSphere(transform.position, avoidanceRange);
-        foreach (var hitCollider in hitColliders)
-        {
-            if (hitCollider.CompareTag("Tree"))
-            {
-                treeDetected = true;
-                isAvoidingTree = true;
-
-                Vector3 colliderCenter = hitCollider.bounds.center;
-                Vector3 directionAway = transform.position - colliderCenter;
-                avoidDirection += directionAway.normalized;
-            }
-        }
-
-        if (treeDetected)
-        {
-            currentSpeed = Mathf.Lerp(currentSpeed, treeAvoidanceSpeed, Time.deltaTime * 1.0f);
-            return avoidDirection.normalized * currentSpeed * avoidanceStrength;
-        }
-
-        if (!treeDetected && isAvoidingTree)
-        {
-            currentSpeed = Mathf.Lerp(currentSpeed, speed, Time.deltaTime * 0.5f);
-            isAvoidingTree = false;
-        }
-
-        return Vector3.zero;
-    }
-
-    Vector3 AvoidTaggedObjects(string tag)
-    {
-        Vector3 avoidanceForce = Vector3.zero;
-        float avoidanceStrength = 5f;
-
-        Collider[] hitColliders = Physics.OverlapSphere(transform.position, detectionRadius);
-        foreach (var hitCollider in hitColliders)
-        {
-            if (hitCollider.CompareTag(tag) && hitCollider.transform != this.transform)
-            {
-                Vector3 directionAway = transform.position - hitCollider.transform.position;
-                avoidanceForce += directionAway.normalized * avoidanceStrength;
-            }
-        }
-
-        return avoidanceForce;
+        return altitudeForce;
     }
 
     List<Boid> GetNearbyBoids()
@@ -176,7 +115,7 @@ public class Boid : MonoBehaviour
         if (nearbyBoids.Count > 0)
         {
             alignmentForce /= nearbyBoids.Count;
-            alignmentForce = (alignmentForce - velocity).normalized * currentSpeed;
+            alignmentForce = alignmentForce.normalized * speed;
         }
 
         return alignmentForce;
@@ -194,7 +133,7 @@ public class Boid : MonoBehaviour
         {
             cohesionForce /= nearbyBoids.Count;
             cohesionForce -= transform.position;
-            cohesionForce = cohesionForce.normalized * currentSpeed;
+            cohesionForce = cohesionForce.normalized * speed;
         }
 
         return cohesionForce;
@@ -212,12 +151,23 @@ public class Boid : MonoBehaviour
             }
         }
 
-        if (nearbyBoids.Count > 0)
+        return separationForce.normalized * separationStrength;
+    }
+
+    Vector3 DetectAndAvoidTreesInPath()
+    {
+        Vector3 avoidDirection = Vector3.zero;
+        Collider[] hitColliders = Physics.OverlapSphere(transform.position, treeAvoidanceRange);
+        foreach (var hitCollider in hitColliders)
         {
-            separationForce = separationForce.normalized * currentSpeed * separationStrength;
+            if (hitCollider.CompareTag("Tree"))
+            {
+                Vector3 directionAway = transform.position - hitCollider.bounds.center;
+                avoidDirection += directionAway.normalized;
+            }
         }
 
-        return separationForce;
+        return avoidDirection.normalized * treeAvoidanceStrength;
     }
 
     void UpdateRotation()
