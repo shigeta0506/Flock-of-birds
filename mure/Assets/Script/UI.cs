@@ -11,6 +11,7 @@ public class UI : MonoBehaviour
 
      void Start()
     {
+        //Å‰‰B‚·
         resetButton.SetActive(false);
         quitButton.SetActive(false);
     }
@@ -26,6 +27,7 @@ public class UI : MonoBehaviour
 
     void ToggleMenu(bool isActive)
     {
+        //‰Ÿ‚³‚ê‚½‚ç•\¦
         resetButton.SetActive(isActive);
         quitButton.SetActive(isActive);
     }

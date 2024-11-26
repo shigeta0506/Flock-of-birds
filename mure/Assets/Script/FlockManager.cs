@@ -5,7 +5,7 @@ public class FlockManager : MonoBehaviour
 {
     public Transform spawnLocation;
     public GameObject boidPrefab;
-    public int boidCount = 20;
+    public int boidCount = 20; //’¹‚Ì”
     public List<Boid> allBoids = new List<Boid>();
 
     void Start()
@@ -15,6 +15,7 @@ public class FlockManager : MonoBehaviour
 
     void SpawnBoids()
     {
+        //’¹‚ÌƒXƒ|[ƒ“&Boid‚Ö“ü—Í
         for (int i = 0; i < boidCount; i++)
         {
             Vector3 spawnPosition = spawnLocation.position + Random.insideUnitSphere * 2f;

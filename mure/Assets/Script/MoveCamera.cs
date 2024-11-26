@@ -13,12 +13,14 @@ public class MoveCamera : MonoBehaviour
 
     void Update()
     {
+        //スピード上昇
         float currentMoveSpeed = moveSpeed;
         if (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift))
         {
             currentMoveSpeed *= 2f;
         }
 
+        //カメラリセット
         if (Input.GetMouseButton(1))
         {
             rotationX -= Input.GetAxis("Mouse Y") * lookSpeedY;
@@ -33,10 +35,13 @@ public class MoveCamera : MonoBehaviour
 
         transform.Translate(moveLeftRight, 0, moveForwardBackward);
 
+        //下降
         if (Input.GetKey(KeyCode.Q))
         {
             transform.Translate(0, -currentMoveSpeed * Time.deltaTime, 0);
         }
+
+        //上昇
         if (Input.GetKey(KeyCode.E))
         {
             transform.Translate(0, currentMoveSpeed * Time.deltaTime, 0);

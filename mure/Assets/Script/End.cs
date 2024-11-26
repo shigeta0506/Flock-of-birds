@@ -2,6 +2,7 @@ using UnityEngine;
 
 public class End : MonoBehaviour
 {
+    //ƒfƒ‚‚ÌI—¹
     public void ExitGame()
     {
         Application.Quit();

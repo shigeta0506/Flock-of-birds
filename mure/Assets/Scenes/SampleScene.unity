@@ -123,23 +123,6 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
---- !u!1 &22150817 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 8261725650921452072, guid: d6acb3df8d7b7c74a99d78d49ae384ee, type: 3}
-  m_PrefabInstance: {fileID: 1305555728}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &22150818
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 22150817}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b8ed41b5a3d43e440912a3e7f3e6df70, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!4 &22150820 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 8261725650921452077, guid: d6acb3df8d7b7c74a99d78d49ae384ee, type: 3}
@@ -1727,7 +1710,7 @@ PrefabInstance:
       objectReference: {fileID: 22150820}
     - target: {fileID: 8261725650921452075, guid: d6acb3df8d7b7c74a99d78d49ae384ee, type: 3}
       propertyPath: boidCount
-      value: 20
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 8261725650921452075, guid: d6acb3df8d7b7c74a99d78d49ae384ee, type: 3}
       propertyPath: spawnLocation
@@ -1743,7 +1726,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8261725650921452077, guid: d6acb3df8d7b7c74a99d78d49ae384ee, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -47.5
+      value: -50.6
       objectReference: {fileID: 0}
     - target: {fileID: 8261725650921452077, guid: d6acb3df8d7b7c74a99d78d49ae384ee, type: 3}
       propertyPath: m_LocalPosition.y
@@ -1751,7 +1734,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8261725650921452077, guid: d6acb3df8d7b7c74a99d78d49ae384ee, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 43.72
+      value: 39.5
       objectReference: {fileID: 0}
     - target: {fileID: 8261725650921452077, guid: d6acb3df8d7b7c74a99d78d49ae384ee, type: 3}
       propertyPath: m_LocalRotation.w

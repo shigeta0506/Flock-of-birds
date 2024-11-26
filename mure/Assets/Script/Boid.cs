@@ -3,6 +3,7 @@ using UnityEngine;
 
 public class Boid : MonoBehaviour
 {
+    //基本設定
     private float speed = 5f;
     private float rotationSpeed = 2f;
     private float neighborRadius = 15f;
@@ -14,12 +15,12 @@ public class Boid : MonoBehaviour
     public float treeAvoidanceRange = 10f;
     private float treeAvoidanceStrength = 10f;
 
-    public List<Boid> allBoids;
+    public List<Boid> allBoids; //シーン内のすべてのBoidを保持
 
-    private Vector3 velocity;
+    private Vector3 velocity;   //現在の移動速度
 
     private int frameCounter = 0;
-    private const int calculationFrequency = 5;
+    private const int calculationFrequency = 5; //計算の頻度（5フレームごとに計算）
 
     private float minAltitude = 15f;
     private float maxAltitude = 25f;
@@ -27,49 +28,58 @@ public class Boid : MonoBehaviour
 
     void Start()
     {
+        //初期速度
         velocity = transform.forward * speed;
     }
 
     void Update()
     {
         frameCounter++;
+
+        //一定フレームごとに力を計算
         if (frameCounter % calculationFrequency == 0)
         {
             CalculateForces();
             frameCounter = 0;
         }
 
+        //Boidを移動
         MoveBoid();
     }
 
     void CalculateForces()
     {
+        //周囲のBoidを取得
         List<Boid> nearbyBoids = GetNearbyBoids();
 
-        Vector3 alignment = Align(nearbyBoids) * 0.5f;
-        Vector3 cohesion = Cohere(nearbyBoids) * 1.0f;
-        Vector3 separation = Separate(nearbyBoids) * separationStrength;
+        //各力の計算
+        Vector3 alignment = Align(nearbyBoids) * 0.5f; //整列の力
+        Vector3 cohesion = Cohere(nearbyBoids) * 1.0f; //結束の力
+        Vector3 separation = Separate(nearbyBoids) * separationStrength; //分離の力
+        Vector3 treeAvoidance = DetectAndAvoidTreesInPath() * 2.5f;      //障害物回避の力
+        Vector3 altitudeAdjustment = MaintainAltitude(); //高度維持の力
 
-        Vector3 treeAvoidance = DetectAndAvoidTreesInPath() * 2.5f;
-
-        Vector3 altitudeAdjustment = MaintainAltitude();
-
+        //全ての力を合計して速度に加算
         Vector3 force = alignment + cohesion + separation + treeAvoidance + altitudeAdjustment;
         velocity += force * Time.deltaTime;
 
+        //速度制限
         velocity = LimitSpeed(velocity);
     }
 
     void MoveBoid()
     {
+        //位置を更新
         Vector3 newPosition = transform.position + velocity * Time.deltaTime;
         transform.position = newPosition;
 
+        // Boidの向きを更新
         UpdateRotation();
     }
 
     Vector3 LimitSpeed(Vector3 vel)
     {
+        //速度を最小値と最大値の間に制限
         float speed = vel.magnitude;
         speed = Mathf.Clamp(speed, minSpeed, maxSpeed);
         return vel.normalized * speed;
@@ -77,6 +87,7 @@ public class Boid : MonoBehaviour
 
     Vector3 MaintainAltitude()
     {
+        //高度を一定範囲内に保つ
         Vector3 altitudeForce = Vector3.zero;
 
         if (transform.position.y < minAltitude)
@@ -93,6 +104,7 @@ public class Boid : MonoBehaviour
 
     List<Boid> GetNearbyBoids()
     {
+        //周囲のBoidを検索しリストに格納
         List<Boid> nearbyBoids = new List<Boid>();
         foreach (Boid otherBoid in allBoids)
         {
@@ -106,6 +118,7 @@ public class Boid : MonoBehaviour
 
     Vector3 Align(List<Boid> nearbyBoids)
     {
+        //整列の力を計算
         Vector3 alignmentForce = Vector3.zero;
         foreach (Boid otherBoid in nearbyBoids)
         {
@@ -123,6 +136,7 @@ public class Boid : MonoBehaviour
 
     Vector3 Cohere(List<Boid> nearbyBoids)
     {
+        //結束の力を計算
         Vector3 cohesionForce = Vector3.zero;
         foreach (Boid otherBoid in nearbyBoids)
         {
@@ -141,6 +155,7 @@ public class Boid : MonoBehaviour
 
     Vector3 Separate(List<Boid> nearbyBoids)
     {
+        //分離の力を計算
         Vector3 separationForce = Vector3.zero;
         foreach (Boid otherBoid in nearbyBoids)
         {
@@ -156,6 +171,7 @@ public class Boid : MonoBehaviour
 
     Vector3 DetectAndAvoidTreesInPath()
     {
+        //Treeタグを検出して回避
         Vector3 avoidDirection = Vector3.zero;
         Collider[] hitColliders = Physics.OverlapSphere(transform.position, treeAvoidanceRange);
         foreach (var hitCollider in hitColliders)
@@ -172,6 +188,7 @@ public class Boid : MonoBehaviour
 
     void UpdateRotation()
     {
+        //Boidの向きを現在の移動方向に合わせる
         Vector3 direction = velocity.normalized;
         if (direction.magnitude > 0.1f)
         {
