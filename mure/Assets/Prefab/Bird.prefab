@@ -115,6 +115,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   allBoids: []
+  centerObject: {fileID: 8261725650921452077, guid: d6acb3df8d7b7c74a99d78d49ae384ee, type: 3}
 --- !u!54 &8106329800691776531
 Rigidbody:
   m_ObjectHideFlags: 0
